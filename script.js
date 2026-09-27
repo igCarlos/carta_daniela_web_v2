@@ -1,8 +1,13 @@
+/* =========================================================
+   ELEMENTOS PRINCIPALES
+========================================================= */
+
 const musicModal = document.getElementById("musicModal");
 const activateMusic = document.getElementById("activateMusic");
-const siteContent = document.getElementById("siteContent");
-const musicControl = document.getElementById("musicControl");
 
+const siteContent = document.getElementById("siteContent");
+
+const musicControl = document.getElementById("musicControl");
 const backgroundMusic = document.getElementById("backgroundMusic");
 
 const openButton = document.getElementById("openLetter");
@@ -14,109 +19,61 @@ const finalNote = document.getElementById("finalNote");
 const heartsContainer = document.getElementById("hearts");
 const starsContainer = document.getElementById("stars");
 
+
+/* =========================================================
+   CONFIGURACIÓN
+========================================================= */
+
 let musicPlaying = false;
 
+const isMobile = window.matchMedia(
+    "(max-width: 768px)"
+).matches;
 
-/* =====================================
-   CONFIGURACIÓN DEL MP3
-===================================== */
-
-// Volumen de 0 a 1.
-// 0.35 = 35%
-backgroundMusic.volume = 0.35;
-
-// Repetir automáticamente.
-backgroundMusic.loop = true;
+const reduceMotion = window.matchMedia(
+    "(prefers-reduced-motion: reduce)"
+).matches;
 
 
-/* =====================================
+/*
+   Cantidad máxima de corazones simultáneos.
+   En celular usamos menos.
+*/
+
+const MAX_HEARTS = isMobile ? 8 : 12;
+
+
+/*
+   Cantidad de estrellas.
+*/
+
+const STAR_COUNT = isMobile ? 20 : 35;
+
+
+/*
+   Música
+*/
+
+if (backgroundMusic) {
+
+    backgroundMusic.volume = 0.25;
+
+    backgroundMusic.loop = true;
+
+}
+
+
+/* =========================================================
    ACTIVAR EXPERIENCIA
-===================================== */
+========================================================= */
 
-activateMusic.addEventListener("click", async () => {
+activateMusic.addEventListener(
+    "click",
+    async () => {
 
-    try {
-
-        await backgroundMusic.play();
-
-        musicPlaying = true;
-
-        musicControl.classList.remove("paused");
-        musicControl.textContent = "♫";
-
-        musicControl.setAttribute(
-            "aria-label",
-            "Pausar música"
-        );
-
-    } catch (error) {
-
-        console.warn(
-            "No se pudo reproducir la música:",
-            error
-        );
-
-    }
-
-
-    /* Ocultar modal */
-
-    musicModal.classList.add("hide");
-
-
-    /* Mostrar página */
-
-    siteContent.classList.add("visible");
-
-    document.body.classList.remove(
-        "page-locked"
-    );
-
-
-    /* Corazones iniciales */
-
-    burstHearts(18);
-
-
-    /* Eliminar modal después de animación */
-
-    setTimeout(() => {
-
-        musicModal.style.display = "none";
-
-    }, 950);
-
-});
-
-
-/* =====================================
-   CONTROL FLOTANTE DE MÚSICA
-===================================== */
-
-musicControl.addEventListener("click", async () => {
-
-    if (musicPlaying) {
-
-        /* PAUSAR */
-
-        backgroundMusic.pause();
-
-        musicPlaying = false;
-
-        musicControl.classList.add(
-            "paused"
-        );
-
-        musicControl.textContent = "♪";
-
-        musicControl.setAttribute(
-            "aria-label",
-            "Reproducir música"
-        );
-
-    } else {
-
-        /* REPRODUCIR */
+        /*
+           Música
+        */
 
         try {
 
@@ -124,9 +81,7 @@ musicControl.addEventListener("click", async () => {
 
             musicPlaying = true;
 
-            musicControl.classList.remove(
-                "paused"
-            );
+            musicControl.classList.remove("paused");
 
             musicControl.textContent = "♫";
 
@@ -144,210 +99,532 @@ musicControl.addEventListener("click", async () => {
 
         }
 
-    }
 
-});
+        /*
+           Ocultar modal
+        */
 
-
-/* =====================================
-   ABRIR CARTA
-===================================== */
-
-openButton.addEventListener("click", () => {
-
-    letterSection.classList.add("show");
-
-    letterSection.setAttribute(
-        "aria-hidden",
-        "false"
-    );
+        musicModal.classList.add("hide");
 
 
-    setTimeout(() => {
+        /*
+           Mostrar página usando requestAnimationFrame.
 
-        letterSection.scrollIntoView({
+           Esto permite que el navegador termine un frame
+           antes de comenzar la animación.
+        */
 
-            behavior: "smooth",
+        requestAnimationFrame(() => {
 
-            block: "start"
+            requestAnimationFrame(() => {
+
+                siteContent.classList.add(
+                    "visible"
+                );
+
+            });
 
         });
 
-    }, 120);
+
+        document.body.classList.remove(
+            "page-locked"
+        );
 
 
-    burstHearts(16);
+        /*
+           Corazones de bienvenida
+        */
 
-});
+        if (!reduceMotion) {
+
+            burstHearts(
+                isMobile ? 5 : 8
+            );
+
+        }
 
 
-/* =====================================
+        /*
+           Quitar el modal del DOM visual
+           cuando finaliza la transición.
+        */
+
+        setTimeout(() => {
+
+            musicModal.style.display =
+                "none";
+
+        }, 900);
+
+    }
+);
+
+
+/* =========================================================
+   CONTROL DE MÚSICA
+========================================================= */
+
+musicControl.addEventListener(
+    "click",
+    async () => {
+
+        if (musicPlaying) {
+
+            pauseMusic();
+
+        } else {
+
+            await playMusic();
+
+        }
+
+    }
+);
+
+
+/* =========================================================
+   REPRODUCIR MÚSICA
+========================================================= */
+
+async function playMusic() {
+
+    try {
+
+        await backgroundMusic.play();
+
+        musicPlaying = true;
+
+        musicControl.classList.remove(
+            "paused"
+        );
+
+        musicControl.textContent =
+            "♫";
+
+        musicControl.setAttribute(
+            "aria-label",
+            "Pausar música"
+        );
+
+    } catch (error) {
+
+        console.warn(
+            "No se pudo reproducir la música:",
+            error
+        );
+
+    }
+
+}
+
+
+/* =========================================================
+   PAUSAR MÚSICA
+========================================================= */
+
+function pauseMusic() {
+
+    backgroundMusic.pause();
+
+    musicPlaying = false;
+
+    musicControl.classList.add(
+        "paused"
+    );
+
+    musicControl.textContent =
+        "♪";
+
+    musicControl.setAttribute(
+        "aria-label",
+        "Reproducir música"
+    );
+
+}
+
+
+/* =========================================================
+   ABRIR CARTA
+========================================================= */
+
+openButton.addEventListener(
+    "click",
+    () => {
+
+        /*
+           Mostrar sección.
+        */
+
+        letterSection.classList.add(
+            "show"
+        );
+
+        letterSection.setAttribute(
+            "aria-hidden",
+            "false"
+        );
+
+
+        /*
+           Esperamos un frame antes
+           de iniciar el desplazamiento.
+        */
+
+        requestAnimationFrame(() => {
+
+            requestAnimationFrame(() => {
+
+                letterSection.scrollIntoView({
+
+                    behavior:
+                        reduceMotion
+                            ? "auto"
+                            : "smooth",
+
+                    block: "start"
+
+                });
+
+            });
+
+        });
+
+
+        /*
+           Corazones
+        */
+
+        if (!reduceMotion) {
+
+            burstHearts(
+                isMobile ? 4 : 7
+            );
+
+        }
+
+    }
+);
+
+
+/* =========================================================
    MENSAJE FINAL
-===================================== */
+========================================================= */
 
-finalButton.addEventListener("click", () => {
+finalButton.addEventListener(
+    "click",
+    () => {
 
-    finalNote.classList.toggle("show");
-
-
-    finalButton.textContent =
-        finalNote.classList.contains("show")
-
-            ? "Gracias por leerme ❤️"
-
-            : "Toca aquí, Daniela";
+        finalNote.classList.toggle(
+            "show"
+        );
 
 
-    burstHearts(24);
+        const visible =
+            finalNote.classList.contains(
+                "show"
+            );
 
-});
+
+        finalButton.textContent =
+            visible
+
+                ? "Gracias por leerme ❤️"
+
+                : "Toca aquí, Daniela";
 
 
-/* =====================================
-   CORAZONES
-===================================== */
+        if (
+            visible &&
+            !reduceMotion
+        ) {
+
+            burstHearts(
+                isMobile ? 6 : 9
+            );
+
+        }
+
+    }
+);
+
+
+/* =========================================================
+   CREAR CORAZÓN
+========================================================= */
 
 function createHeart(
     customX = null,
     customY = null
 ) {
 
+    /*
+       No crear más partículas
+       de las necesarias.
+    */
+
+    if (
+        heartsContainer.children.length >=
+        MAX_HEARTS
+    ) {
+
+        return;
+
+    }
+
+
     const heart =
         document.createElement("span");
 
 
-    heart.className = "heart";
+    heart.className =
+        "heart";
 
 
     heart.textContent =
-        Math.random() > 0.25
+        Math.random() > 0.3
+
             ? "❤"
+
             : "♡";
 
 
+    /*
+       Tamaño
+    */
+
     const size =
-        12 + Math.random() * 18;
+        12 +
+        Math.random() *
+        (isMobile ? 8 : 12);
 
 
     heart.style.fontSize =
         `${size}px`;
 
 
-    heart.style.left =
-        customX !== null
+    /*
+       Posición horizontal
+    */
 
-            ? `${customX}px`
+    if (customX !== null) {
 
-            : `${Math.random() * 100}vw`;
+        heart.style.left =
+            `${customX}px`;
 
+    } else {
 
-    if (customY !== null) {
-
-        heart.style.bottom =
-            `${window.innerHeight - customY}px`;
+        heart.style.left =
+            `${Math.random() * 100}vw`;
 
     }
 
 
+    /*
+       Posición vertical personalizada
+    */
+
+    if (customY !== null) {
+
+        const bottom =
+            Math.max(
+                0,
+                window.innerHeight -
+                customY
+            );
+
+
+        heart.style.bottom =
+            `${bottom}px`;
+
+    }
+
+
+    /*
+       Duración
+    */
+
     const duration =
-        6 + Math.random() * 5;
+        7 +
+        Math.random() *
+        3;
 
 
     heart.style.animationDuration =
         `${duration}s`;
 
 
-    heart.style.opacity =
-        `${0.25 + Math.random() * 0.45}`;
+    /*
+       Añadir al DOM
+    */
+
+    heartsContainer.appendChild(
+        heart
+    );
 
 
-    heartsContainer.appendChild(heart);
+    /*
+       Eliminar justo cuando termina
+       la animación.
 
+       Es más eficiente que usar
+       un setTimeout por corazón.
+    */
 
-    setTimeout(() => {
+    heart.addEventListener(
 
-        heart.remove();
+        "animationend",
 
-    }, duration * 1000);
+        () => {
+
+            heart.remove();
+
+        },
+
+        {
+            once: true
+        }
+
+    );
 
 }
 
 
-/* =====================================
+/* =========================================================
    EXPLOSIÓN DE CORAZONES
-===================================== */
+========================================================= */
 
-function burstHearts(amount = 12) {
+function burstHearts(
+    amount = 6
+) {
+
+    if (reduceMotion) {
+
+        return;
+
+    }
+
 
     const x =
         window.innerWidth / 2;
 
 
     const y =
-        window.innerHeight * 0.72;
+        window.innerHeight *
+        0.72;
 
 
-    for (
-        let i = 0;
-        i < amount;
-        i++
-    ) {
-
-        setTimeout(() => {
-
-            const offsetX =
-                x +
-                (Math.random() - 0.5) *
-                220;
+    let index = 0;
 
 
-            const offsetY =
-                y +
-                (Math.random() - 0.5) *
-                80;
+    function createNextHeart() {
+
+        if (
+            index >= amount
+        ) {
+
+            return;
+
+        }
 
 
-            createHeart(
-                offsetX,
-                offsetY
-            );
+        /*
+           Si ya hay demasiados,
+           detener la explosión.
+        */
 
-        }, i * 60);
+        if (
+            heartsContainer.children.length >=
+            MAX_HEARTS
+        ) {
+
+            return;
+
+        }
+
+
+        const offsetX =
+            x +
+            (
+                Math.random() -
+                0.5
+            ) *
+            180;
+
+
+        const offsetY =
+            y +
+            (
+                Math.random() -
+                0.5
+            ) *
+            60;
+
+
+        createHeart(
+            offsetX,
+            offsetY
+        );
+
+
+        index++;
+
+
+        /*
+           requestAnimationFrame evita
+           disparar demasiadas operaciones
+           simultáneamente.
+        */
+
+        requestAnimationFrame(
+            createNextHeart
+        );
 
     }
+
+
+    createNextHeart();
 
 }
 
 
-/* =====================================
-   ESTRELLAS
-===================================== */
+/* =========================================================
+   CREAR ESTRELLAS
+========================================================= */
 
 function createStars() {
 
-    const total =
-        Math.min(
+    if (reduceMotion) {
 
-            80,
+        return;
 
-            Math.floor(
-                window.innerWidth / 14
-            )
+    }
 
-        );
+
+    /*
+       DocumentFragment permite crear todas las
+       estrellas antes de insertarlas en pantalla.
+       Esto evita múltiples repintados.
+    */
+
+    const fragment =
+        document.createDocumentFragment();
 
 
     for (
         let i = 0;
-        i < total;
+        i < STAR_COUNT;
         i++
     ) {
 
         const star =
-            document.createElement("span");
+            document.createElement(
+                "span"
+            );
 
 
-        star.className = "star";
+        star.className =
+            "star";
 
 
         star.style.left =
@@ -364,37 +641,156 @@ function createStars() {
 
         star.style.animationDuration =
             `${
-                1.8 +
-                Math.random() * 2.8
+                2.2 +
+                Math.random() *
+                2.5
             }s`;
 
 
-        starsContainer.appendChild(star);
+        fragment.appendChild(
+            star
+        );
 
     }
+
+
+    starsContainer.appendChild(
+        fragment
+    );
 
 }
 
 
-/* =====================================
+/* =========================================================
    CORAZONES AUTOMÁTICOS
-===================================== */
+========================================================= */
 
-setInterval(() => {
+let automaticHeartInterval = null;
+
+
+function startAutomaticHearts() {
 
     if (
-        siteContent.classList.contains(
-            "visible"
-        )
+        automaticHeartInterval ||
+        reduceMotion
     ) {
 
-        createHeart();
+        return;
 
     }
 
-}, 1200);
+
+    automaticHeartInterval =
+        setInterval(
+            () => {
+
+                /*
+                   Solo crearlos si:
+
+                   1. La página está visible.
+                   2. La pestaña está activa.
+                   3. No hay demasiados corazones.
+                */
+
+                if (
+                    siteContent.classList.contains(
+                        "visible"
+                    ) &&
+
+                    !document.hidden &&
+
+                    heartsContainer.children.length <
+                    MAX_HEARTS
+                ) {
+
+                    createHeart();
+
+                }
+
+            },
+
+            /*
+               Antes eran 1200 ms.
+               Ahora 2400 ms.
+            */
+
+            isMobile
+                ? 3000
+                : 2400
+
+        );
+
+}
 
 
-/* Crear estrellas */
+/* =========================================================
+   PAUSAR EFECTOS SI CAMBIA DE PESTAÑA
+========================================================= */
+
+document.addEventListener(
+    "visibilitychange",
+    () => {
+
+        /*
+           Los corazones automáticos
+           ya comprueban document.hidden.
+
+           Esto evita trabajo innecesario
+           mientras la pestaña está oculta.
+        */
+
+        if (document.hidden) {
+
+            return;
+
+        }
+
+    }
+);
+
+
+/* =========================================================
+   EVITAR ANIMACIONES PESADAS DURANTE RESIZE
+========================================================= */
+
+let resizeTimer;
+
+
+window.addEventListener(
+    "resize",
+    () => {
+
+        clearTimeout(
+            resizeTimer
+        );
+
+
+        resizeTimer =
+            setTimeout(
+                () => {
+
+                    /*
+                       Aquí podrías recalcular
+                       elementos si fuera necesario.
+                    */
+
+                },
+                150
+            );
+
+    },
+
+    {
+        passive: true
+    }
+
+);
+
+
+/* =========================================================
+   INICIALIZAR
+========================================================= */
 
 createStars();
+
+startAutomaticHearts();
